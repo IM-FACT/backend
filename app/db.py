@@ -1,10 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import create_engine
-import os
+from app.config import settings
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5432/imfact")
-SYNC_DATABASE_URL = os.getenv("SYNC_DATABASE_URL", "postgresql+psycopg2://postgres:password@localhost:5432/imfact")
+DATABASE_URL = settings.database_url
+SYNC_DATABASE_URL = settings.sync_database_url
 
 engine = create_async_engine(
     DATABASE_URL,
