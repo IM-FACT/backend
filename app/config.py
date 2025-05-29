@@ -4,6 +4,7 @@ class Settings(BaseSettings):
     app_name: str = "climate-factcheck-backend"
     debug: bool = True
     database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/imfact"  # 예시
+    sync_database_url: str = "postgresql+psycopg2://postgres:password@localhost:5432/imfact"  # 추가
 
     class Config:
         env_file = ".env"
