@@ -12,22 +12,38 @@ backend/
 ├── app/                # FastAPI 라우터, 설정, 서비스 모듈 등
 │   ├── __init__.py
 │   ├── routers.py      # 엔드포인트 라우터 (health, /im-fact/ask 등)
-│   └── config.py       # 환경변수 및 설정 관리
+│   ├── config.py       # 환경변수 및 설정 관리
+│   ├── db.py           # DB 연결 및 세션 관리
+│   └── models.py       # ORM 모델 정의
 ├── main.py             # FastAPI 앱 엔트리포인트
 ├── requirements.txt    # 의존성 패키지 목록
 ├── README.md           # 백엔드 설명 파일
+├── alembic/            # DB 마이그레이션 관리 폴더
+│   └── versions/       # 마이그레이션 이력 (반드시 git에 포함)
+├── alembic.ini         # alembic 설정 파일
 └── ...
 ```
 
 ---
 
-## 실행 방법
+## 실행 및 개발 환경 세팅
 
 1. 의존성 설치
    ```bash
    pip install -r requirements.txt
    ```
-2. 서버 실행
+2. 환경변수(.env) 파일 작성 (예시)
+   ```env
+   APP_NAME=climate-factcheck-backend
+   DEBUG=True
+   DATABASE_URL=postgresql+asyncpg://imfact_user:비밀번호@localhost:5432/imfact
+   SYNC_DATABASE_URL=postgresql+psycopg2://imfact_user:비밀번호@localhost:5432/imfact
+   ```
+3. DB 마이그레이션 (최초 1회)
+   ```bash
+   alembic upgrade head
+   ```
+4. 서버 실행
    ```bash
    uvicorn main:app --reload
    ```
@@ -88,6 +104,19 @@ backend/
 
 ---
 
+## DB 설계 및 Alembic 마이그레이션
+- SQLAlchemy ORM 기반 users, chat_sessions, chat_messages 테이블 설계
+- Alembic으로 DB 마이그레이션 관리 (alembic/versions/ 폴더는 반드시 git에 포함)
+- DB 유저/스키마 권한, 인코딩(UTF-8) 등 환경 주의
+
+---
+
+## .gitignore 규칙
+- .env, *.env, venv, __pycache__, *.pyc 등 민감/불필요 파일 무시
+- alembic/versions/는 반드시 git에 포함, alembic/README 등만 무시
+
+---
+
 ## 개발 가이드
 - FastAPI 최신 구조(모듈화, 의존성 주입, 환경설정 등) 적용
 - 라우터, 서비스, 설정 등은 app/ 하위에 모듈화
@@ -101,3 +130,9 @@ backend/
 - test_rag의 langchain 기반 RAG 기능 통합
 - DB 연동, 인증, 로깅 등 기능 확장
 - 프론트엔드와의 연동 및 end-to-end 테스트
+
+---
+
+## 커밋/버전관리 팁
+- 커밋 시 alembic/versions/ 폴더, requirements.txt, .gitignore 등 변경사항 꼭 확인
+- 민감정보(.env 등)는 절대 커밋하지 않기
