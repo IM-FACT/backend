@@ -17,7 +17,7 @@ class UserResponse(BaseModel):
     created_at: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ChatSessionCreate(BaseModel):
     title: str = Field(..., description="채팅 세션 제목", example="기후변화 QnA")
@@ -28,7 +28,7 @@ class ChatSessionResponse(BaseModel):
     created_at: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ChatMessageCreate(BaseModel):
     session_id: int = Field(..., description="채팅 세션 ID", example=1)
@@ -44,4 +44,4 @@ class ChatMessageResponse(BaseModel):
     created_at: str
 
     class Config:
-        orm_mode = True 
+        from_attributes = True
