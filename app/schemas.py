@@ -28,4 +28,20 @@ class ChatSessionResponse(BaseModel):
     created_at: str
 
     class Config:
+        orm_mode = True
+
+class ChatMessageCreate(BaseModel):
+    session_id: int
+    role: str  # 'user' or 'assistant'
+    content: str
+
+class ChatMessageResponse(BaseModel):
+    id: int
+    session_id: int
+    user_id: int | None
+    role: str
+    content: str
+    created_at: str
+
+    class Config:
         orm_mode = True 
