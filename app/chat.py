@@ -70,4 +70,34 @@ async def list_messages(
         raise HTTPException(status_code=403, detail="세션 접근 권한이 없습니다.")
     result = await db.execute(select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at))
     messages = result.scalars().all()
-    return messages 
+    return messages
+
+@router.delete("/sessions/{session_id}")
+async def delete_session(
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    result = await db.execute(select(ChatSession).where(ChatSession.id == session_id))
+    session = result.scalar_one_or_none()
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="세션 접근 권한이 없습니다.")
+    # 세션의 메시지 모두 삭제
+    await db.execute(ChatMessage.__table__.delete().where(ChatMessage.session_id == session_id))
+    await db.delete(session)
+    await db.commit()
+    return {"detail": "세션 및 메시지 삭제 완료"}
+
+@router.delete("/messages/{message_id}")
+async def delete_message(
+    message_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    result = await db.execute(select(ChatMessage).where(ChatMessage.id == message_id))
+    msg = result.scalar_one_or_none()
+    if not msg or (msg.user_id is not None and msg.user_id != current_user.id):
+        raise HTTPException(status_code=403, detail="메시지 접근 권한이 없습니다.")
+    await db.delete(msg)
+    await db.commit()
+    return {"detail": "메시지 삭제 완료"} 
