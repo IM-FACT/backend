@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from datetime import datetime
 
 class UserCreate(BaseModel):
     email: EmailStr = Field(..., description="이메일 주소", example="user@example.com")
@@ -14,7 +15,7 @@ class UserResponse(BaseModel):
     id: int
     email: EmailStr
     nickname: str
-    created_at: str
+    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -25,7 +26,7 @@ class ChatSessionCreate(BaseModel):
 class ChatSessionResponse(BaseModel):
     id: int
     title: str
-    created_at: str
+    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -41,7 +42,7 @@ class ChatMessageResponse(BaseModel):
     user_id: int | None
     role: str
     content: str
-    created_at: str
+    created_at: datetime
 
     class Config:
         from_attributes = True

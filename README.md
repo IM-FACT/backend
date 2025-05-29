@@ -130,7 +130,8 @@ POST /chat/messages
 
 ## 테스트 코드 실행
 ```bash
-pytest tests/
+python -m pytest tests/test_auth.py
+python -m pytest tests/test_chat.py
 ```
 - 회원가입/로그인/채팅 등 전체 API 자동 테스트
 

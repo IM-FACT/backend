@@ -1,10 +1,11 @@
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from main import app
 
 @pytest.mark.asyncio
 async def test_chat_flow():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         # 회원가입 및 로그인
         await ac.post("/auth/register", json={
             "email": "chatuser@example.com",
