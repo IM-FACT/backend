@@ -34,7 +34,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         raise credentials_exception
     return user
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse, summary="회원가입", description="이메일, 비밀번호, 닉네임을 입력받아 회원가입을 처리합니다.")
 async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     # 이메일 중복 체크
     result = await db.execute(select(User).where(User.email == user.email))
@@ -54,7 +54,7 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.refresh(new_user)
     return new_user
 
-@router.post("/login")
+@router.post("/login", summary="로그인", description="이메일과 비밀번호로 로그인하여 JWT 토큰을 발급받습니다.")
 async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == user.email))
     db_user = result.scalar_one_or_none()
@@ -66,6 +66,6 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     token = create_access_token({"sub": str(db_user.id)})
     return {"access_token": token, "token_type": "bearer"}
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=UserResponse, summary="내 정보 조회", description="JWT 토큰을 이용해 내 정보를 조회합니다.")
 async def read_me(current_user: User = Depends(get_current_user)):
     return current_user 

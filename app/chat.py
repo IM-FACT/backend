@@ -14,7 +14,7 @@ async def get_db():
     async with SessionLocal() as session:
         yield session
 
-@router.post("/sessions", response_model=ChatSessionResponse)
+@router.post("/sessions", response_model=ChatSessionResponse, summary="채팅 세션 생성", description="새로운 채팅 세션을 생성합니다.")
 async def create_session(
     session_in: ChatSessionCreate,
     db: AsyncSession = Depends(get_db),
@@ -30,7 +30,7 @@ async def create_session(
     await db.refresh(new_session)
     return new_session
 
-@router.get("/sessions", response_model=List[ChatSessionResponse])
+@router.get("/sessions", response_model=List[ChatSessionResponse], summary="채팅 세션 목록 조회", description="내가 생성한 채팅 세션 목록을 조회합니다.")
 async def list_sessions(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user)
@@ -39,7 +39,7 @@ async def list_sessions(
     sessions = result.scalars().all()
     return sessions
 
-@router.post("/messages", response_model=ChatMessageResponse)
+@router.post("/messages", response_model=ChatMessageResponse, summary="채팅 메시지 저장", description="채팅 세션에 메시지를 저장합니다.")
 async def create_message(
     msg_in: ChatMessageCreate,
     db: AsyncSession = Depends(get_db),
@@ -57,7 +57,7 @@ async def create_message(
     await db.refresh(new_msg)
     return new_msg
 
-@router.get("/messages", response_model=List[ChatMessageResponse])
+@router.get("/messages", response_model=List[ChatMessageResponse], summary="채팅 메시지 목록 조회", description="특정 세션의 메시지 목록을 조회합니다.")
 async def list_messages(
     session_id: int,
     db: AsyncSession = Depends(get_db),
@@ -72,7 +72,7 @@ async def list_messages(
     messages = result.scalars().all()
     return messages
 
-@router.delete("/sessions/{session_id}")
+@router.delete("/sessions/{session_id}", summary="채팅 세션 삭제", description="특정 채팅 세션과 하위 메시지를 삭제합니다.")
 async def delete_session(
     session_id: int,
     db: AsyncSession = Depends(get_db),
@@ -88,7 +88,7 @@ async def delete_session(
     await db.commit()
     return {"detail": "세션 및 메시지 삭제 완료"}
 
-@router.delete("/messages/{message_id}")
+@router.delete("/messages/{message_id}", summary="채팅 메시지 삭제", description="특정 메시지를 삭제합니다.")
 async def delete_message(
     message_id: int,
     db: AsyncSession = Depends(get_db),
