@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import router as main_router
 from app.config import settings
 from app.auth import router as auth_router
+from app.chat import router as chat_router
 
 app = FastAPI(title=settings.app_name, debug=settings.debug)
 
@@ -18,3 +19,4 @@ app.add_middleware(
 # 라우터 등록
 app.include_router(main_router)
 app.include_router(auth_router)
+app.include_router(chat_router)

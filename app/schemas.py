@@ -17,4 +17,15 @@ class UserResponse(BaseModel):
     created_at: str
 
     class Config:
+        orm_mode = True
+
+class ChatSessionCreate(BaseModel):
+    title: str
+
+class ChatSessionResponse(BaseModel):
+    id: int
+    title: str
+    created_at: str
+
+    class Config:
         orm_mode = True 
