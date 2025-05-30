@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.schemas import UserCreate, UserResponse, UserLogin
 from app.models import User
-from app.utils import hash_password, verify_password, create_access_token, decode_access_token
+from app.utils import hash_password, verify_password, create_access_token, decode_access_token, send_email_naver
 from app.db import SessionLocal
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer
@@ -86,8 +86,13 @@ async def forgot_password(req: UserCreate = None, db: AsyncSession = Depends(get
     user.reset_token = token
     user.reset_token_expire = datetime.utcnow() + timedelta(minutes=30)
     await db.commit()
-    # 이메일 발송 대신 print
-    print(f"[비밀번호 재설정] 이메일: {email}, 토큰: {token}")
+    # 이메일 발송
+    subject = "IM.FACT 비밀번호 재설정 안내"
+    body = f"아래 토큰을 입력해 비밀번호를 재설정하세요.\n\n토큰: {token}\n\n30분 이내에만 유효합니다."
+    send_result = send_email_naver(email, subject, body)
+    if not send_result:
+        print(f"[이메일 발송 실패] {email}, 토큰: {token}")
+        return {"detail": "이메일 발송에 실패했습니다. 관리자에게 문의하세요."}
     return {"detail": "비밀번호 재설정 토큰이 이메일로 발송되었습니다."}
 
 @router.post("/reset-password", summary="비밀번호 재설정", description="토큰과 새 비밀번호로 비밀번호를 재설정합니다.")
