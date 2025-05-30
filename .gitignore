@@ -3,3 +3,11 @@ __pycache__/
 *.pyc
 .env
 *.env
+
+# alembic 마이그레이션 이력(versions)은 반드시 git에 포함
+# 불필요한 alembic 파일만 무시
+alembic/README
+alembic/script.py.mako
+
+# 기타 임시/캐시 파일
+.DS_Store
