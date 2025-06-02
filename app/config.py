@@ -1,5 +1,3 @@
-import os
-from pathlib import Path
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -14,6 +12,6 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"  # Redis 설정 추가
 
     class Config:
-        env_file = os.path.join(Path(__file__).parent.parent, ".env")
+        env_file = ".env"
 
 settings = Settings()
