@@ -1,157 +1,131 @@
-# IM.FACT Backend - FastAPI
+# IM.FACT Backend
 
-IM.FACT 서비스의 백엔드 API 서버입니다.
-- FastAPI 기반 RESTful API
-- JWT 인증/회원 관리, 채팅 세션/메시지 관리
-- Alembic 마이그레이션, 테스트 코드, 예외처리, Swagger(OpenAPI) 한글 문서화 지원
+**IM.FACT**는 환경·기후 데이터 기반의 신뢰성 있는 정보 제공을 목표로 하는 RAG(검색증강생성) 기반 AI 서비스입니다. 이 백엔드는 FastAPI, PostgreSQL, Redis를 활용해 빠르고 확장성 높은 API를 제공합니다.
 
 ---
 
-## 폴더 구조
+## 🏗️ 프로젝트 개요
+
+- **목표**: 누구나 신뢰할 수 있는 환경·기후 정보를 쉽고 빠르게 얻을 수 있도록 지원
+- **주요 기술**: FastAPI, SQLAlchemy, Alembic, Redis Stack(Vector Search), JWT, Docker
+- **특징**
+  - RAG 기반 실시간 답변 생성
+  - 시멘틱 캐시/문서 벡터 검색으로 빠른 응답
+  - Swagger(OpenAPI) 한글 문서화
+  - 자동화된 테스트 및 마이그레이션
+
+---
+
+## 📂 폴더 구조
 
 ```
 backend/
-├── app/                # FastAPI 라우터, 서비스, 설정, 유틸 등
-│   ├── __init__.py
-│   ├── routers.py      # 기본 엔드포인트(health 등)
-│   ├── config.py       # 환경변수 및 설정
-│   ├── db.py           # DB 연결 및 세션
-│   ├── models.py       # ORM 모델
-│   ├── schemas.py      # Pydantic 스키마(문서화 포함)
-│   ├── utils.py        # 비밀번호 해시, JWT 등 유틸
-│   ├── auth.py         # 인증/회원 관리 라우터
-│   ├── chat.py         # 채팅 세션/메시지 라우터
-│   ├── exception_handlers.py # 전역 예외처리
-│   └── logging_config.py     # 로깅 설정
+├── app/                # FastAPI 라우터, 서비스, 설정, 유틸
 ├── main.py             # FastAPI 앱 엔트리포인트
 ├── requirements.txt    # 의존성 패키지 목록
-├── README.md           # 백엔드 설명 파일
 ├── alembic/            # DB 마이그레이션 폴더
-│   └── versions/       # 마이그레이션 이력 (반드시 git에 포함)
-├── alembic.ini         # alembic 설정 파일
-├── .gitignore          # git 무시 규칙
 ├── tests/              # API 테스트 코드
-│   ├── test_auth.py
-│   └── test_chat.py
 └── ...
 ```
+> 각 디렉터리별 상세 설명은 코드 내 docstring 및 주석 참고
 
 ---
 
-## 실행 및 개발 환경 세팅
+## 🚀 빠른 시작
 
-1. 의존성 설치
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. 환경변수(.env) 파일 작성 (예시)
-   ```env
-   APP_NAME=climate-factcheck-backend
-   DEBUG=True
-   DATABASE_URL=postgresql+asyncpg://imfact_user:비밀번호@localhost:5432/imfact
-   SYNC_DATABASE_URL=postgresql+psycopg2://imfact_user:비밀번호@localhost:5432/imfact
-   ```
-3. DB 마이그레이션 (최초 1회)
-   ```bash
-   alembic upgrade head
-   ```
-4. 서버 실행
-   ```bash
-   uvicorn main:app --reload
-   ```
-   - 기본 주소: http://localhost:8000
-   - Swagger 문서: http://localhost:8000/docs (한글 설명/예시 제공)
+### 1. 개발 환경 준비
 
----
+- Python 3.8 이상
+- PostgreSQL 12 이상
+- Redis 8.0 이상 (Vector Search 필수)
+- (권장) Docker, Docker Compose
 
-## 주요 기능 및 API
+### 2. 설치 및 실행
 
-### 1. 인증/회원 관리
-- **회원가입**: `POST /auth/register`
-- **로그인(JWT 토큰 발급)**: `POST /auth/login`
-- **내 정보 조회**: `GET /auth/me` (토큰 필요)
-
-### 2. 채팅 세션/메시지
-- **세션 생성/조회/삭제**: `POST/GET/DELETE /chat/sessions`, `/chat/sessions/{session_id}`
-- **메시지 저장/조회/삭제**: `POST/GET/DELETE /chat/messages`, `/chat/messages/{message_id}`
-
-### 3. 헬스체크
-- `GET /health`
-
----
-
-## API 예시 (Swagger에서 한글 설명/예시 제공)
-
-### 회원가입
-```http
-POST /auth/register
-{
-  "email": "user@example.com",
-  "password": "testpass123",
-  "nickname": "홍길동"
-}
-```
-
-### 로그인
-```http
-POST /auth/login
-{
-  "email": "user@example.com",
-  "password": "testpass123"
-}
-=> { "access_token": "...", "token_type": "bearer" }
-```
-
-### 내 정보 조회
-```http
-GET /auth/me
-Authorization: Bearer {access_token}
-```
-
-### 채팅 세션 생성
-```http
-POST /chat/sessions
-{
-  "title": "기후변화 QnA"
-}
-```
-
-### 메시지 저장
-```http
-POST /chat/messages
-{
-  "session_id": 1,
-  "role": "user",
-  "content": "안녕하세요"
-}
-```
-
----
-
-## 테스트 코드 실행
 ```bash
-python -m pytest tests/test_auth.py
-python -m pytest tests/test_chat.py
+# 의존성 설치
+pip install -r requirements.txt
+
+# .env 파일 작성 (예시 아래 참고)
+cp .env.example .env
+
+# DB 마이그레이션
+alembic upgrade head
+
+# 서버 실행
+uvicorn main:app --reload
 ```
-- 회원가입/로그인/채팅 등 전체 API 자동 테스트
+- 기본 주소: http://localhost:8000
+- Swagger 문서: http://localhost:8000/docs
 
 ---
 
-## 예외처리/로깅/문서화
-- 모든 에러는 JSON 포맷으로 통일(`{"error": ...}`)
-- 서버 시작/에러 등 주요 이벤트 로깅
-- Swagger(OpenAPI)에서 한글 설명/예시 제공
+## ⚙️ 환경 변수 예시 (.env)
+
+```env
+APP_NAME=climate-factcheck-backend
+DEBUG=True
+DATABASE_URL=postgresql+asyncpg://imfact_user:비밀번호@localhost:5432/imfact
+REDIS_URL=redis://localhost:6379
+```
 
 ---
 
-## 개발/운영 주의사항
-- 민감정보(.env 등)는 절대 커밋하지 않기
-- alembic/versions/ 폴더는 반드시 git에 포함
-- DB 유저/스키마 권한, 인코딩(UTF-8) 등 환경 주의
+## 🔑 주요 기능 및 API
+
+- **인증/회원 관리**: 회원가입, 로그인(JWT), 내 정보 조회
+- **채팅 세션/메시지**: 세션 생성/조회/삭제, 메시지 저장/조회/삭제
+- **RAG 기반 답변**: `/im-fact/ask`에서 시멘틱 캐시/문서 벡터 검색 기반 답변 제공
+- **헬스체크**: `/health` 엔드포인트
+
+> 모든 엔드포인트 및 예시는 Swagger UI에서 확인 가능
 
 ---
 
-## 향후 계획
-- RAG(검색증강생성) 기능 통합
-- 프론트엔드와의 연동 및 end-to-end 테스트
-- CI/CD, 배포 자동화 등
+## 🧠 Redis 기반 RAG(검색증강생성) 구조
+
+- **시멘틱 캐시**: 질문-답변 쌍을 임베딩 벡터로 Redis에 저장, 유사 질문 즉시 응답
+- **문서 벡터 검색**: 근거 문서 임베딩을 Redis에 저장, 질문과 유사한 문서를 벡터 유사도로 검색
+
+### Redis Stack 설치 예시
+
+```bash
+docker run -d -p 6379:6379 redis:latest
+```
+
+### 운영 팁
+
+- Redis Stack(8.x 이상, Vector Search 필수) 사용 권장
+- Redis 장애 시 fallback 정책(예: DB 직접 조회)도 고려
+- .env 파일에 REDIS_URL 필수
+
+---
+
+## 🧪 테스트 및 품질 관리
+
+- 자동화된 pytest 기반 테스트 제공
+- 커버리지 측정 및 CI/CD 연동 권장
+- 예외/로깅/문서화 일관성 유지
+
+```bash
+python -m pytest tests/
+```
+
+---
+
+## 🛠️ 개발/운영 체크리스트
+
+- 민감정보(.env 등)는 git에 커밋 금지
+- alembic/versions/ 폴더는 반드시 버전 관리
+- DB/Redis 권한 및 인코딩(UTF-8) 확인
+- 신규 기능 추가 시 테스트/문서화 필수
+
+---
+
+## 🗺️ 향후 계획
+
+- RAG 고도화 및 프론트엔드 실시간 연동
+- 자동화된 배포/테스트 환경 구축
+- 사용자 피드백 기반 기능 개선 및 보안 강화
+
+---
