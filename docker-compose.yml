@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: imfact
+      POSTGRES_USER: imfact_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # 비밀번호는 .env 파일에서 불러옴
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    env_file:
+      - .env # 민감정보는 .env 파일로 분리, git에는 커밋하지 않음
+
+  redis:
+    image: redis:8
+    ports:
+      - "6379:6379"
+    # Redis 8.0 이상은 벡터 검색, JSON 등 모든 최신 기능이 기본 내장됨
+    # 별도의 redis-stack/redisearch 모듈 설치 불필요 (공식 권장)
+
+  backend:
+    build: .
+    command: bash -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  db_data: 

@@ -7,7 +7,7 @@
 ## 🏗️ 프로젝트 개요
 
 - **목표**: 누구나 신뢰할 수 있는 환경·기후 정보를 쉽고 빠르게 얻을 수 있도록 지원
-- **주요 기술**: FastAPI, SQLAlchemy, Alembic, Redis Stack(Vector Search), JWT, Docker
+- **주요 기술**: FastAPI, SQLAlchemy, Alembic, Redis(Vector Search), JWT, Docker
 - **특징**
   - RAG 기반 실시간 답변 생성
   - 시멘틱 캐시/문서 벡터 검색으로 빠른 응답
@@ -25,49 +25,45 @@ backend/
 ├── requirements.txt    # 의존성 패키지 목록
 ├── alembic/            # DB 마이그레이션 폴더
 ├── tests/              # API 테스트 코드
+├── Dockerfile          # 백엔드 앱용 Dockerfile
+├── docker-compose.yml  # 전체 서비스 오케스트레이션
 └── ...
 ```
 > 각 디렉터리별 상세 설명은 코드 내 docstring 및 주석 참고
 
 ---
 
-## 🚀 빠른 시작
+## 🚀 빠른 시작 (Docker Compose)
 
-### 1. 개발 환경 준비
+1. `.env` 파일 생성 (민감정보 분리)
+   - 아래 예시 참고해 backend 디렉터리에 `.env` 파일을 만듭니다.
+   - 이 파일은 git에 커밋되지 않으니, 팀 내부에서만 안전하게 공유하세요.
 
-- Python 3.8 이상
-- PostgreSQL 12 이상
-- Redis 8.0 이상 (Vector Search 필수)
-- (권장) Docker, Docker Compose
+   ```env
+   # .env 예시
+   POSTGRES_PASSWORD=여기에_안전한_비밀번호_입력
+   REDIS_URL=redis://redis:6379
+   # 기타 환경변수 추가 가능
+   ```
 
-### 2. 설치 및 실행
+2. Docker Compose로 전체 서비스 실행
+   ```bash
+   docker compose up --build
+   ```
+   - FastAPI(8000), PostgreSQL(5432), Redis(6379) 컨테이너가 한 번에 실행됩니다.
+   - DB 마이그레이션도 자동 적용됩니다.
 
-```bash
-# 의존성 설치
-pip install -r requirements.txt
-
-# .env 파일 작성 (예시 아래 참고)
-cp .env.example .env
-
-# DB 마이그레이션
-alembic upgrade head
-
-# 서버 실행
-uvicorn main:app --reload
-```
-- 기본 주소: http://localhost:8000
-- Swagger 문서: http://localhost:8000/docs
+3. API 문서 접속
+   - http://localhost:8000/docs (Swagger UI)
 
 ---
 
-## ⚙️ 환경 변수 예시 (.env)
+## 🛡️ 환경 변수 및 보안 주의사항
 
-```env
-APP_NAME=climate-factcheck-backend
-DEBUG=True
-DATABASE_URL=postgresql+asyncpg://imfact_user:비밀번호@localhost:5432/imfact
-REDIS_URL=redis://localhost:6379
-```
+- **모든 민감정보(비밀번호, 시크릿키 등)는 반드시 .env 파일에만 작성**
+- `.env` 파일은 이미 `.gitignore`에 포함되어 있어 git에 노출되지 않음
+- docker-compose.yml의 POSTGRES_PASSWORD 등은 .env에서 자동으로 불러옴
+- 팀 외부에 .env 파일이 유출되지 않도록 주의
 
 ---
 
@@ -87,17 +83,44 @@ REDIS_URL=redis://localhost:6379
 - **시멘틱 캐시**: 질문-답변 쌍을 임베딩 벡터로 Redis에 저장, 유사 질문 즉시 응답
 - **문서 벡터 검색**: 근거 문서 임베딩을 Redis에 저장, 질문과 유사한 문서를 벡터 유사도로 검색
 
-### Redis Stack 설치 예시
+### docker-compose 예시 (redis, db 포함)
 
-```bash
-docker run -d -p 6379:6379 redis:latest
+```yaml
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: imfact
+      POSTGRES_USER: imfact_user
+      POSTGRES_PASSWORD: 비밀번호
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--loadmodule", "/usr/lib/redis/modules/redisearch.so"] # Vector Search용
+
+  backend:
+    build: .
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  db_data:
 ```
-
-### 운영 팁
-
-- Redis Stack(8.x 이상, Vector Search 필수) 사용 권장
-- Redis 장애 시 fallback 정책(예: DB 직접 조회)도 고려
-- .env 파일에 REDIS_URL 필수
 
 ---
 
@@ -108,7 +131,7 @@ docker run -d -p 6379:6379 redis:latest
 - 예외/로깅/문서화 일관성 유지
 
 ```bash
-python -m pytest tests/
+docker compose exec backend pytest
 ```
 
 ---
@@ -129,3 +152,9 @@ python -m pytest tests/
 - 사용자 피드백 기반 기능 개선 및 보안 강화
 
 ---
+
+## 📎 참고: 로컬 설치법(비권장)
+
+- Python, PostgreSQL, Redis 직접 설치 후 requirements.txt, alembic, uvicorn 등 수동 실행
+- 환경별 의존성/버전 차이로 인한 문제 발생 가능성 높음
+- 팀/운영 환경에서는 반드시 Docker 기반 사용 권장
