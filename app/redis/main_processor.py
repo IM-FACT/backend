@@ -86,10 +86,13 @@ class MainProcessor:
         # 1. 시멘틱 캐시 검색
         cache_results = self.semantic_cache.search_similar_question(
             query=query,
-            score_threshold=0.05
+            score_threshold=0.85
         )
+        print(f"🔍 시멘틱 캐시 검색 결과: {len(cache_results)}개 (임계값: 0.85)")
         if cache_results:
             best = max(cache_results, key=lambda x: x["similarity"])
+            print(f"🎯 [시멘틱 캐시 HIT] 유사도: {best['similarity']:.3f}")
+            print(f"📝 유사 질문: {best['question']}")
             result["operation"] = "cache_hit"
             result["cache_answer"] = best["answer"]
             result["success"] = True

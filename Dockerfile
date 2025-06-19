@@ -1,5 +1,21 @@
-# FastAPI 백엔드용 Dockerfile 예시
+# FastAPI 백엔드용 Dockerfile 
 FROM python:3.10-slim
+
+# 시스템 패키지 업데이트 및 Playwright 필요 패키지 설치
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    ca-certificates \
+    libnss3-dev \
+    libatk-bridge2.0-dev \
+    libdrm-dev \
+    libxcomposite-dev \
+    libxdamage-dev \
+    libxrandr-dev \
+    libgbm-dev \
+    libgtk-3-dev \
+    libasound2-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # 작업 디렉토리 생성 및 이동
 WORKDIR /app
@@ -7,6 +23,10 @@ WORKDIR /app
 # 의존성 복사 및 설치
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Playwright 브라우저 설치
+RUN playwright install chromium
+RUN playwright install-deps chromium
 
 # 소스코드 복사
 COPY . .
