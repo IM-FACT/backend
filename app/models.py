@@ -10,8 +10,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     nickname = Column(String(50), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    reset_token = Column(String(255), nullable=True)
-    reset_token_expire = Column(DateTime, nullable=True)
+    # DEMO: reset_token 기능 제거 (비밀번호 재설정 기능 미사용)
 
     sessions = relationship("ChatSession", back_populates="user")
     messages = relationship("ChatMessage", back_populates="user")
