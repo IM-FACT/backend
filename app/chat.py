@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.schemas import ChatSessionCreate, ChatSessionResponse, ChatMessageCreate, ChatMessageResponse
-from app.models import ChatSession, ChatMessage
+from app.models import ChatSession, ChatMessage, User  # User import 추가
 # from app.auth import get_current_user  # DEMO: 인증 제거
 from app.db import SessionLocal
 from typing import List
@@ -20,6 +20,19 @@ async def create_session(
     db: AsyncSession = Depends(get_db)
     # current_user=Depends(get_current_user)  # DEMO: 인증 제거
 ):
+    # DEMO: id=1 유저가 없으면 자동 생성
+    user = await db.get(User, 1)
+    if not user:
+        user = User(
+            id=1,
+            email="demo@imfact.com",
+            password_hash="demo_hash",
+            nickname="데모",
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
     new_session = ChatSession(
         user_id=1,  # DEMO: 기본 사용자 ID 사용
         title=session_in.title,
