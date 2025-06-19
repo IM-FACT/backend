@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import router as main_router
 from app.config import settings
-from app.auth import router as auth_router
+# from app.auth import router as auth_router  # DEMO: 인증 라우터 제거
 from app.chat import router as chat_router
 from app.exception_handlers import http_exception_handler, validation_exception_handler, server_error_handler
 from fastapi.exceptions import RequestValidationError
@@ -32,7 +32,7 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(main_router)
-app.include_router(auth_router)
+# app.include_router(auth_router)  # DEMO: 인증 라우터 제거
 app.include_router(chat_router)
 
 @app.on_event("startup")
