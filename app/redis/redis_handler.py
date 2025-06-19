@@ -1,5 +1,6 @@
 import redis
 from app.redis.vector_search import VectorSearchIndex
+from app.redis.debug_utils import RedisIndexDebugger
 import numpy as np
 from typing import List, Dict, Any
 import time
@@ -45,7 +46,13 @@ class RedisVectorSearchHandler:
                 distance_metric="COSINE"
             )
             
+            # 디버깅 유틸리티 초기화
+            self.debugger = RedisIndexDebugger(self.redis_client)
+            
             print(f"Redis Vector Search 핸들러 초기화 완료: {redis_url}")
+            
+            # 초기화 후 간단한 상태 확인
+            self.debugger.full_diagnosis([index_name])
             
         except Exception as e:
             print(f"Redis Vector Search 핸들러 초기화 오류: {e}")
@@ -105,6 +112,8 @@ class RedisVectorSearchHandler:
         Returns:
             List[Dict]: 검색 결과 리스트
         """
+        # 검색 시작 로그 생략
+        
         try:
             # 쿼리 텍스트를 임베딩으로 변환
             query_embedding = self.embedding_model.embed_query(query_text)
@@ -116,14 +125,19 @@ class RedisVectorSearchHandler:
                 score_threshold=similarity_threshold
             )
             
-            print(f"검색 완료: {len(results)}개 결과 (임계값: {similarity_threshold})")
+            print(f"✅ 검색 완료: {len(results)}개 결과 (임계값: {similarity_threshold})")
             
             return results
             
         except Exception as e:
-            print(f"유사 임베딩 검색 오류: {e}")
+            print(f"❌ 유사 임베딩 검색 오류: {e}")
             import traceback
             traceback.print_exc()
+            
+            # 오류 발생 시 간단한 진단
+            print(f"🩺 검색 오류로 인한 진단:")
+            self.debugger.full_diagnosis([self.index_name])
+            
             return []
     
     def delete_embedding(self, key: str) -> bool:
@@ -216,12 +230,19 @@ class SemanticCacheHandler:
         self.redis_url = redis_url
         self.index_name = index_name
         self.redis_client = get_redis_client(redis_url)
+        
+        # 디버깅 유틸리티 초기화
+        self.debugger = RedisIndexDebugger(self.redis_client)
+        
         self.vector_index = VectorSearchIndex(
             redis_client=self.redis_client,
             index_name=index_name,
             vector_dimension=1536,  # OpenAI text-embedding-3-small
             distance_metric="COSINE"
         )
+        
+        # 초기화 후 간단한 상태 확인
+        self.debugger.full_diagnosis([index_name])
 
     def save_qa_pair(self, question: str, answer: str, metadata: dict = None) -> bool:
         """
@@ -249,6 +270,8 @@ class SemanticCacheHandler:
         """
         쿼리와 유사한 질문-답변 쌍을 score_threshold 기준으로 검색
         """
+        # 검색 시작 로그 생략
+        
         try:
             embedding = self.embedding_model.embed_query(query)
             results = self.vector_index.search_similar(
@@ -256,8 +279,9 @@ class SemanticCacheHandler:
                 top_k=top_k,
                 score_threshold=score_threshold
             )
+            
             # answer 필드만 추출
-            return [
+            formatted_results = [
                 {
                     "question": r["metadata"].get("question"),
                     "answer": r["metadata"].get("answer"),
@@ -265,9 +289,18 @@ class SemanticCacheHandler:
                 }
                 for r in results
             ]
+            
+            print(f"✅ 시멘틱 캐시 검색 완료: {len(formatted_results)}개 결과")
+            return formatted_results
+            
         except Exception as e:
-            print(f"[SemanticCache] 검색 오류: {e}")
+            print(f"❌ [SemanticCache] 검색 오류: {e}")
             import traceback; traceback.print_exc()
+            
+            # 오류 발생 시 간단한 진단
+            print(f"🩺 시멘틱 캐시 오류로 인한 진단:")
+            self.debugger.full_diagnosis([self.index_name])
+            
             return []
 
 

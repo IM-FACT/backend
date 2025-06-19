@@ -16,3 +16,17 @@ openai
 python-dotenv
 langchain
 langchain-openai
+
+# scrap_mcp dependencies
+aiohttp
+beautifulsoup4
+httpx
+lxml
+lxml[html_clean]
+lxml_html_clean
+mcp[cli]
+playwright
+pytest-playwright
+requests
+tf-playwright-stealth
+trafilatura

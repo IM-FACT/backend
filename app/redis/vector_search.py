@@ -10,6 +10,7 @@ from redis.commands.search.indexDefinition import IndexDefinition, IndexType
 from redis.commands.search.query import Query
 import numpy as np
 from typing import List, Dict, Any
+from app.redis.debug_utils import RedisIndexDebugger
 
 
 
@@ -35,19 +36,32 @@ class VectorSearchIndex:
         self.vector_dimension = vector_dimension
         self.distance_metric = distance_metric
         
+        # 디버깅 유틸리티 초기화
+        self.debugger = RedisIndexDebugger(redis_client)
+        
         # 인덱스 생성 또는 확인
         self._ensure_index_exists()
         
     def _ensure_index_exists(self):
         """인덱스가 존재하는지 확인하고, 없으면 생성"""
-        try:
-            # 인덱스 정보 조회
-            self.redis_client.ft(self.index_name).info()
-            print(f"인덱스 '{self.index_name}' 이미 존재합니다.")
-        except:
+        print(f"\n🔍 인덱스 '{self.index_name}' 상태 확인 중...")
+        
+        # 상세 진단 실행
+        exists = self.debugger.check_index_exists(self.index_name)
+        
+        if exists:
+            doc_count = self.debugger.count_documents_in_index(self.index_name)
+            print(f"✅ 인덱스 '{self.index_name}' 존재 ({doc_count}개 문서)")
+        else:
             # 인덱스가 없으면 생성
-            print(f"인덱스 '{self.index_name}' 생성 중...")
+            print(f"🔧 인덱스 '{self.index_name}' 생성 중...")
             self._create_index()
+            
+            # 생성 후 다시 확인
+            if self.debugger.check_index_exists(self.index_name):
+                print(f"✅ 인덱스 '{self.index_name}' 생성 완료")
+            else:
+                print(f"❌ 인덱스 '{self.index_name}' 생성 실패!")
             
     def _create_index(self):
         """Vector Search 인덱스 생성"""
@@ -144,6 +158,16 @@ class VectorSearchIndex:
         Returns:
             List[Dict]: 검색 결과 리스트
         """
+        # 검색 전 간단한 인덱스 상태 확인
+        if not self.debugger.check_index_exists(self.index_name):
+            print(f"❌ 검색 실패: 인덱스 '{self.index_name}' 없음")
+            return []
+        
+        doc_count = self.debugger.count_documents_in_index(self.index_name)
+        if doc_count == 0:
+            print(f"⚠️ 인덱스 '{self.index_name}' 비어있음")
+            return []
+        
         try:
             # 쿼리 벡터를 바이트 배열로 변환
             query_bytes = np.array(query_vector, dtype=np.float32).tobytes()
@@ -154,6 +178,8 @@ class VectorSearchIndex:
                 .sort_by("score")\
                 .paging(0, top_k)\
                 .dialect(2)
+            
+            # 검색 로그 생략 가능
             
             # 검색 실행
             results = self.redis_client.ft(self.index_name).search(

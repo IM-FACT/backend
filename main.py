@@ -9,6 +9,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi import HTTPException
 from app.logging_config import logger
 from app.redis.main_processor import MainProcessor
+import sys
+import asyncio
+
+# Windows 환경에서 Playwright 호환성을 위한 이벤트 루프 정책 설정
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 # 전역 MainProcessor 인스턴스
 processor = None
