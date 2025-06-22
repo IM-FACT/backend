@@ -47,7 +47,7 @@ async def use_bing_n_page(url: str):
 
                 if(link == url):
                     result["title"] = title
-                    result["descrption"] = descrption
+                    result["description"] = descrption
                     break
 
             if not result:

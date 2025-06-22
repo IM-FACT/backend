@@ -3,6 +3,7 @@ import os
 from app.config import settings
 import json
 from typing import List, Dict
+import re
 
 client = OpenAI(api_key=settings.openai_api_key)
 
@@ -14,11 +15,11 @@ def load_prompt(filename):
         return f.read()
 
 # GPT-4.1을 사용하여 MCP 수집 문서 기반 질문 답변 생성
-def ans_with_mcp(query: str, docs: List[Dict[str, str]]) -> str:
+def ans_with_mcp(query: str, docs: List[Dict[str, str]]) -> Dict:
     try:
         action_prompt = load_prompt("generate_ans_prompt.txt")
-        pool = "\n\n".join(f"[출처] {doc['url']}\n{doc['content']}" for doc in docs)
-
+        # 제목 정보도 프롬프트에 포함
+        pool = "\n\n".join(f"[출처 제목] {doc.get('title', '제목 없음')}\n[출처 URL] {doc['url']}\n[내용] {doc['content']}" for doc in docs)
 
         user_prompt = f"""{action_prompt}
                         [문서 정보] {pool}
@@ -32,8 +33,30 @@ def ans_with_mcp(query: str, docs: List[Dict[str, str]]) -> str:
             ],
             temperature=0,
         )
-        return response.choices[0].message.content.strip()
+        
+        answer = response.choices[0].message.content.strip()
+        
+        # 답변 끝에 있는 URL 목록을 확실하게 제거 (개선된 로직)
+        lines = answer.strip().split('\n')
+        url_pattern = re.compile(r'^\s*\[?\d+\]?\.?\s*https?://\S+')
+        
+        # URL 패턴이 아닌 마지막 줄의 인덱스를 찾음
+        last_non_url_index = -1
+        for i in range(len(lines) - 1, -1, -1):
+            if not url_pattern.match(lines[i].strip()):
+                last_non_url_index = i
+                break
+        
+        # URL이 아닌 내용까지만 잘라내어 최종 답변으로 사용
+        if last_non_url_index != -1:
+            answer = '\n'.join(lines[:last_non_url_index + 1]).strip()
+
+        # 출처 정보 재구성
+        sources = [{"title": doc.get("title", "제목 없음"), "url": doc["url"]} for doc in docs]
+        
+        return {"answer": answer, "sources": sources}
+
     except Exception as e:
         print("GPT 4.1 답변 생성 실패")
         print(e)
-        return "답변 생성 실패"
+        return {"answer": "답변 생성 실패", "sources": []}

@@ -35,17 +35,25 @@ async def ask_factcheck(req: Request):
         result = await asyncio.to_thread(main.processor.process, quest)
         
         if result["success"]:
-            ans = result["final_answer"]
+            # final_answer는 이제 {"answer": "...", "sources": [...]} 형태의 객체
+            response_data = result["final_answer"]
         else:
-            ans = f"처리 오류: {result['message']}"
+            # 오류 발생 시에도 동일한 구조로 응답
+            response_data = {
+                "answer": f"처리 오류: {result['message']}",
+                "sources": []
+            }
 
         return JSONResponse(
             status_code=200,
-            content={"content": ans}
+            content=response_data
         )
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(
             status_code=500,
-            content={"error": f"서버 오류: {str(e)}"}
+            content={
+                "answer": f"서버 오류: {str(e)}",
+                "sources": []
+            }
         ) 

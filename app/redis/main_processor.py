@@ -3,6 +3,7 @@ import sys
 from typing import Dict, Any, List
 import time
 import asyncio
+import json
 
 # import os
 
@@ -94,10 +95,17 @@ class MainProcessor:
             print(f"🎯 [시멘틱 캐시 HIT] 유사도: {best['similarity']:.3f}")
             print(f"📝 유사 질문: {best['question']}")
             result["operation"] = "cache_hit"
-            result["cache_answer"] = best["answer"]
+            # 캐시된 답변이 JSON 문자열일 경우 파싱
+            try:
+                cached_data = json.loads(best["answer"])
+                result["cache_answer"] = cached_data
+            except (json.JSONDecodeError, TypeError):
+                # 기존 텍스트 형태의 캐시 호환
+                result["cache_answer"] = {"answer": best["answer"], "sources": []}
+
             result["success"] = True
             result["message"] = "시멘틱 캐시에서 답변을 반환했습니다."
-            result["final_answer"] = best["answer"]
+            result["final_answer"] = result["cache_answer"]
             return result
 
         # 2. 벡터 검색 (문서 기반 근거 탐색)
@@ -130,25 +138,24 @@ class MainProcessor:
         print("🤖 GPT 답변 생성 시작...")
         print(f"📝 전달할 문서 개수: {len(query_ans_pool)}")
         
-        generated_answer = ans_with_mcp(query=query, docs=query_ans_pool)
+        generated_data = ans_with_mcp(query=query, docs=query_ans_pool)
         
         print(f"✅ GPT 답변 생성 완료")
-        print(f"📝 답변 길이: {len(generated_answer)}")
-        print(f"📝 답변 내용: {generated_answer}")
-        # # 3. 답변 생성 (여기선 임시 답변)
-        # generated_answer = f"[임시 답변] '{query}'에 대한 답변입니다."
+        print(f"📝 답변 길이: {len(generated_data['answer'])}")
+        print(f"📝 답변 내용: {generated_data['answer']}")
+        print(f"📚 출처 개수: {len(generated_data['sources'])}")
 
-        # 4. 캐시에 저장
+        # 4. 캐시에 저장 (JSON 문자열로 저장)
         self.semantic_cache.save_qa_pair(
             question=query,
-            answer=generated_answer,
+            answer=json.dumps(generated_data, ensure_ascii=False),
             metadata={"source": "gpt", "timestamp": time.time()}
         )
         result["operation"] = "cache_miss_saved"
-        result["cache_answer"] = generated_answer
+        result["cache_answer"] = generated_data
         result["success"] = True
-        result["message"] = "새 답변을 생성하여 시멘틱 캐시에 저장했습니다."
-        result["final_answer"] = generated_answer
+        result["message"] = "새 답변을 생성하여 시맨틱 캐시에 저장했습니다."
+        result["final_answer"] = generated_data
         return result
 
     def display_results(self, result: Dict[str, Any]) -> None:
@@ -165,12 +172,24 @@ class MainProcessor:
         if result["operation"] == "cache_hit":
             print("\n🔍 [시멘틱 캐시 HIT] 답변:")
             print("-" * 80)
-            print(result["cache_answer"])
+            # cache_answer가 딕셔너리일 경우 answer 키 접근
+            answer_data = result["cache_answer"]
+            if isinstance(answer_data, dict):
+                print(answer_data.get("answer"))
+                print("\n[출처 정보]")
+                for source in answer_data.get("sources", []):
+                    print(f"- {source.get('title')}: {source.get('url')}")
+            else:
+                print(answer_data) # 기존 텍스트 캐시 호환
             print("-" * 80)
         elif result["operation"] == "cache_miss_saved":
             print("\n💾 [시멘틱 캐시 MISS] 새 답변 저장:")
             print("-" * 80)
-            print(result["cache_answer"])
+            answer_data = result["cache_answer"]
+            print(answer_data.get("answer"))
+            print("\n[출처 정보]")
+            for source in answer_data.get("sources", []):
+                print(f"- {source.get('title')}: {source.get('url')}")
             print("-" * 80)
             print("\n[벡터 검색 결과]")
             for idx, item in enumerate(result["vector_search_results"], 1):

@@ -12,17 +12,13 @@ class Settings(BaseSettings):
 
     # --- JWT ---
     secret_key: str
-    algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
+    algorithm: str
+    access_token_expire_minutes: int
     
     # --- 외부 API 키 ---
     openai_api_key: str
     brave_ai_api_key: str
     google_api_key: str
-    
-    # --- 이메일 (선택) ---
-    naver_email: str | None = None
-    naver_password: str | None = None
 
     class Config:
         env_file = ".env"

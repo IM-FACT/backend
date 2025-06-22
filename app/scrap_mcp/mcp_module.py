@@ -42,7 +42,15 @@ async def search_scrap(query: str) -> list[dict]:
         partial_results = brave_search_impl(query=r_q, api_key=api_key, count=2)
         results.extend(partial_results)
 
-    valid_results = [res for res in results if is_url_alive(res["url"])]
+    # URL 기준으로 중복 결과 제거
+    unique_results = []
+    seen_urls = set()
+    for res in results:
+        if res['url'] not in seen_urls:
+            unique_results.append(res)
+            seen_urls.add(res['url'])
+
+    valid_results = [res for res in unique_results if is_url_alive(res["url"])]
 
     all_scrap_list = []
     for item in valid_results:
@@ -57,9 +65,17 @@ async def search_scrap(query: str) -> list[dict]:
             if not content or not isinstance(content, str) or len(content.strip()) == 0:
                 content = result.get("page", {}).get("description", "")
 
+            # title 추출 로직 개선 (bing 실패 시 google 결과 활용)
+            title = result.get("page", {}).get("title", "제목 없음")
+            
+            google_result = result.get("google", {})
+            if (not title or title == "제목 없음") and isinstance(google_result, dict):
+                title = google_result.get("title", "제목 없음")
+
             if content and isinstance(content, str) and len(content.strip()) > 0:
                 all_scrap_list.append({
                     "url": item["url"],
+                    "title": title.strip(),
                     "content": content.strip()
                 })
 
